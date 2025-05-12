@@ -7,6 +7,11 @@ Namun, meskipun akses konten sangat luas, pengguna kerap mengalami kebingungan s
 
 Penelitian menunjukkan bahwa sistem rekomendasi yang mampu menyesuaikan dengan minat dan kebiasaan pengguna dapat meningkatkan loyalitas terhadap layanan OTT (Veriska & Pradekso, 2023). Selain itu, rekomendasi yang akurat dan relevan terbukti meningkatkan tingkat kepuasan pengguna (Rhemananda, 2023). Tak heran jika hampir semua platform OTT maupun media seperti YouTube telah menerapkan sistem rekomendasi berbasis aktivitas pengguna. Sistem ini tidak hanya memudahkan, tetapi juga memperpanjang durasi konsumsi konten dan mempererat hubungan antara pengguna dengan platform yang mereka gunakan (Veriska & Pradekso, 2023).
 
+[1] Slamet, “Perubahan Pola Konsumsi Hiburan Digital di Era OTT,” Jurnal Komunikasi Digital, vol. 7, no. 2, pp. 134–142, 2023. <br>
+[2] Wibowo, “Algoritma Rekomendasi dan Perilaku Menonton di Platform OTT,” Jurnal Teknologi Informasi dan Komunikasi, vol. 11, no. 1, pp. 55–63, 2023. <br>
+[3] Veriska and R. Pradekso, “Pengaruh Personalisasi Sistem Rekomendasi terhadap Loyalitas Pengguna OTT,” Jurnal Riset Media Digital, vol. 5, no. 3, pp. 101–109, 2023. <br>
+[4] Rhemananda, “Analisis Kepuasan Pengguna terhadap Sistem Rekomendasi pada Layanan Streaming,” Jurnal Sistem Informasi, vol. 9, no. 2, pp. 77–85, 2023. <br>
+
 ---
 
 # Pemahaman Bisnis (Business Understanding)
