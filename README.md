@@ -37,37 +37,85 @@ Penelitian menunjukkan bahwa sistem rekomendasi yang mampu menyesuaikan dengan m
    
 2. **Collaborative Filtering** diterapkan menggunakan model *Singular Value Decomposition (SVD)* yang dikembangkan secara manual dengan TensorFlow, guna memprediksi rating berdasarkan interaksi historis antar pengguna dan item.
    
-3. **Content-Based Filtering** diterapkan dengan pendekatan *cosine similarity* untuk mengukur kemiripan antar film berdasarkan atribut genre. Pendekatan ini sangat efektif untuk merekomendasikan film yang memiliki karakteristik serupa dengan preferensi pengguna.
+3. **Content-Based Filtering** diterapkan dengan pendekatan *cosine similarity* antar film berdasarkan atribut genre. Rekomendasi diberikan dengan mencari film-film yang paling mirip secara konten dengan film-film yang sudah disukai pengguna. Pendekatan ini efektif dalam merekomendasikan film yang memiliki karakteristik genre serupa tanpa perlu membangun profil preferensi pengguna secara eksplisit.
+
 
 ![image](https://github.com/user-attachments/assets/977a6422-ccc2-486a-b042-69c22d3c209e)
 
 ---
 
 # Pemahaman Data (Data Understanding)
+## Deskripsi Dataset
+### Dataset 1: `u.data`
 
-Dataset yang digunakan berasal dari MovieLens 100K, berisi informasi tentang pengguna, film, dan rating. Berikut penjelasan tiap file penting:
+#### Sumber Data
+Dataset ini merupakan bagian dari MovieLens 100k dataset dan tersedia di [MovieLens 100k Dataset](https://grouplens.org/datasets/movielens/100k/).
 
-- **u.data**  
-  Berisi 100.000 baris data rating dari 943 pengguna terhadap 1.682 film. Data tersimpan dalam format tab-separated dengan struktur: `user_id | item_id | rating | timestamp`. Rating berada dalam skala 1-5.
+#### Jumlah Baris dan Kolom
+- Jumlah baris: 100.000
+- Jumlah kolom: 4
 
-- **u.item**  
-  Menyediakan informasi lengkap mengenai film, seperti judul, tanggal rilis, dan 19 kolom genre biner. Satu film bisa termasuk dalam beberapa genre.
+#### Kondisi Data
+- Tidak terdapat missing value
+- Perlu dilakukan pengecekan duplikasi berdasarkan kombinasi `user_id`, `item_id`, dan `timestamp`
+- Tidak ada outlier karena rating dibatasi pada skala 1–5
 
-- **u.user**  
-  Menyimpan data demografis pengguna, meliputi usia, jenis kelamin, pekerjaan, dan kode pos.
+#### Penjelasan Kolom:
+| Kolom       | Deskripsi                                         |
+|-------------|---------------------------------------------------|
+| user_id     | ID unik pengguna (1–943)                          |
+| item_id     | ID unik film (1–1682)                             |
+| rating      | Rating film dari pengguna (skala 1–5)             |
+| timestamp   | Waktu pemberian rating dalam format UNIX time     |
 
-- **u.genre dan u.occupation**  
-  File referensi yang memuat daftar genre dan pekerjaan.
+---
 
-- **u1.base sampai u5.test**  
-  Merupakan data pembagian untuk validasi silang 5-fold, memungkinkan evaluasi yang lebih stabil terhadap model.
+### Dataset 2: `u.item`
 
-- **ua.base dan ub.base**  
-  Digunakan untuk validasi berdasarkan pembagian di mana masing-masing pengguna memiliki tepat 10 rating di data pengujian.
+#### Sumber Data
+Merupakan bagian dari folder `ml-100k/` dalam MovieLens 100k dataset.
 
-- **mku.sh dan allbut.pl**  
-  Skrip shell untuk menghasilkan subset data dari `u.data`. <br><br>
-Dalam proyek ini, hanya dua dataset utama yang digunakan, yaitu u.data yang merepresentasikan data interaksi pengguna dengan film (disebut sebagai users) dan u.item yang memuat informasi metadata film termasuk genre (disebut sebagai genres). Pemilihan dua dataset ini didasarkan pada kebutuhan inti proyek dalam membangun sistem rekomendasi yang efektif, di mana u.data digunakan untuk membangun model berbasis perilaku pengguna (collaborative filtering), sementara u.item digunakan untuk pendekatan berbasis konten (content-based filtering) berdasarkan genre film.
+#### Jumlah Baris dan Kolom
+- Jumlah baris: 1.682
+- Jumlah kolom: 24
+
+#### Kondisi Data
+- Tidak terdapat missing value
+- Tidak terdapat data duplikat (setiap `movie_id` unik)
+- Kolom genre dalam bentuk biner (0 atau 1), tidak terdapat outlier
+
+#### Penjelasan Kolom:
+| No  | Kolom                | Deskripsi                                                  |
+|-----|----------------------|------------------------------------------------------------|
+| 1   | movie_id             | ID unik film                                               |
+| 2   | movie_title          | Judul film                                                 |
+| 3   | release_date         | Tanggal rilis film                                         |
+| 4   | video_release_date   | Tanggal rilis versi video                                  |
+| 5   | IMDb_URL             | Link ke halaman film di IMDb                               |
+| 6–24| 19 kolom genre biner | Menandakan genre film (1 = ya, 0 = tidak)                  |
+
+#### Daftar Genre (Kolom ke-6 hingga ke-24):
+| Kolom     | Genre         |
+|-----------|---------------|
+| 6         | unknown       |
+| 7         | Action        |
+| 8         | Adventure     |
+| 9         | Animation     |
+| 10        | Children's    |
+| 11        | Comedy        |
+| 12        | Crime         |
+| 13        | Documentary   |
+| 14        | Drama         |
+| 15        | Fantasy       |
+| 16        | Film-Noir     |
+| 17        | Horror        |
+| 18        | Musical       |
+| 19        | Mystery       |
+| 20        | Romance       |
+| 21        | Sci-Fi        |
+| 22        | Thriller      |
+| 23        | War           |
+| 24        | Western       |
 ---
 
 # Analisis Data Eksploratif (EDA)
@@ -111,8 +159,11 @@ Tahun **1995** tercatat sebagai tahun dengan jumlah produksi film terbanyak (215
 - Semua data disalin ke objek baru untuk mencegah perubahan data mentah.
 
 ## Untuk Content-Based Filtering  
-- Dilakukan **penggabungan (merge)** antara data pengguna dan genre.  
-- Pemilihan film difokuskan pada yang memiliki rating ≥ 4 oleh user target, dan hanya kolom genre yang diambil untuk keperluan perhitungan kemiripan.
+- Dilakukan **penggabungan (merge)** antara data pengguna dan data genre film.  
+- Film-film yang telah diberikan rating tinggi (≥ 4) oleh user target dipilih sebagai basis film referensi.  
+- Genre film diformat menjadi vektor biner untuk setiap film.  
+- Kemiripan antar film dihitung menggunakan **cosine similarity** berdasarkan vektor genre.  
+- Rekomendasi diperoleh dari film-film yang memiliki skor similarity tertinggi terhadap film-film yang sudah disukai pengguna tersebut.
 
 ---
 
@@ -171,24 +222,24 @@ Dimana:
 ## Content-Based Filtering
 
 ### Proses Implementasi  
-- Menggabungkan data pengguna dan genre.  
-- Diambil film yang memiliki rating tinggi dari user target.  
-- Genre diformat menjadi vektor biner.  
-- Cosine similarity digunakan untuk mengukur kedekatan antar film berdasarkan vektor genre.
+- Data film dengan atribut genre dikonversi menjadi representasi vektor biner.  
+- Film yang telah diberi rating tinggi oleh pengguna menjadi film acuan (query).  
+- Cosine similarity digunakan untuk mengukur kedekatan antar film berdasarkan vektor genre tersebut.  
+- Rekomendasi film diperoleh dengan mencari film yang paling mirip dengan film acuan, bukan berdasarkan profil eksplisit pengguna.
 
 ### Interpretasi  
-![image](https://github.com/user-attachments/assets/6ea57bed-1007-43a6-97ca-6c5d83f32980)
+![image](https://github.com/user-attachments/assets/ede9aecf-d117-4ae5-98c9-f48cc0fb7814)
 
-- Hasil perhitungan similarity menghasilkan daftar film yang mirip dengan preferensi pengguna.  
-- Top 3 film dengan skor similarity tertinggi direkomendasikan.
+- Sistem merekomendasikan film-film yang secara konten (genre) paling mirip dengan film-film yang sudah disukai pengguna.  
+- Daftar rekomendasi dihasilkan dari perhitungan kemiripan antar film, sehingga film yang direkomendasikan memiliki karakteristik genre yang sangat serupa dengan film referensi.
 
 ### Kelebihan  
-- Relevan untuk pengguna baru.  
-- Tidak bergantung pada interaksi pengguna lain.
+- Efektif untuk pengguna baru yang belum memiliki banyak interaksi karena tidak bergantung pada data interaksi pengguna lain.  
+- Memberikan rekomendasi berdasarkan kesamaan konten film secara langsung.
 
 ### Kekurangan  
-- Kurang variatif karena hanya merekomendasikan film dengan genre serupa.  
-- Tidak mempertimbangkan popularitas film.
+- Rekomendasi cenderung kurang bervariasi karena terbatas pada film yang memiliki genre serupa.  
+- Tidak mempertimbangkan faktor lain seperti popularitas atau rating pengguna lain.
 
 ---
 
@@ -197,15 +248,24 @@ Dimana:
 ## Evaluasi Collaborative Filtering (dengan MAE dan RMSE)  
 Evaluasi dilakukan dengan 5-fold cross-validation dan berbagai learning rate. Hasil terbaik diperoleh pada **learning rate = 0.05** dengan rata-rata error terendah:
 
-- **Train MAE:** 0.5872  
-- **Train RMSE:** 0.7514  
-- **Test MAE:** 0.8542  
-- **Test RMSE:** 1.1038
+### Hasil Evaluasi:
+- **Rata-rata Training**:
+  - MAE: 0.5999
+  - RMSE: 0.7658
+- **Rata-rata Testing**:
+  - MAE: 0.8573
+  - RMSE: 1.1053
 
 Selisih antara train dan test cukup kecil, menunjukkan model tidak overfitting dan memiliki kemampuan generalisasi yang baik.
 
-## Evaluasi Content-Based Filtering  
-Karena pendekatan ini tidak memprediksi nilai numerik, maka evaluasi dilakukan dengan pendekatan kualitatif dan pengukuran cosine similarity. Kinerja model tergantung pada keberagaman dan representasi genre.
+## Evaluasi Content-Based Filtering
+
+Pendekatan Content-Based Filtering pada sistem ini menggunakan kemiripan fitur antar film untuk memberikan rekomendasi, tanpa memprediksi nilai rating secara numerik. Evaluasi dilakukan menggunakan metrik **Precision@10**, yang mengukur proporsi film relevan di antara 10 rekomendasi teratas.
+
+Berdasarkan contoh rekomendasi film mirip *Toy Story*, Precision@10 diestimasi sekitar **0.6**, yang menunjukkan bahwa sekitar 6 dari 10 film rekomendasi memang relevan dan sesuai genre atau tema film target. Ini jauh lebih tinggi dibandingkan dengan rata-rata Precision@10 item-based Collaborative Filtering yang hanya sebesar **0.1386** dari 942 user.
+
+Hasil ini mengindikasikan bahwa metode Content-Based Filtering mampu memberikan rekomendasi yang lebih fokus dan relevan secara tematik, khususnya pada film dengan genre spesifik. Namun, evaluasi ini masih berdasarkan studi kasus terbatas dan perlu validasi lebih lanjut menggunakan data preferensi pengguna yang lebih luas.
+
 
 ---
 
@@ -214,6 +274,27 @@ Karena pendekatan ini tidak memprediksi nilai numerik, maka evaluasi dilakukan d
 Dua pendekatan sistem rekomendasi telah dibandingkan secara menyeluruh:
 
 - **Collaborative Filtering (SVD)** unggul dalam menangkap preferensi pengguna secara implisit melalui pola interaksi, namun kurang cocok untuk pengguna atau item baru.
-- **Content-Based Filtering** cocok untuk pengguna baru dan memberikan kontrol lebih besar berdasarkan preferensi eksplisit, namun bisa memberikan hasil yang terlalu sempit.
+- **Content-Based Filtering** menggunakan cosine similarity antar film berhasil merekomendasikan film yang mirip secara genre dengan film-film yang sudah disukai oleh pengguna, tanpa membangun profil preferensi pengguna secara eksplisit.  
+   - Metode ini sangat berguna untuk pengguna baru atau situasi cold start, meskipun rekomendasi yang dihasilkan cenderung terbatas pada variasi genre yang sama.
 
 Rekomendasi akhir adalah untuk menggabungkan kedua pendekatan ke dalam sistem hybrid guna memaksimalkan keunggulan masing-masing metode.
+
+## Evaluasi Relevansi Hasil dengan Tujuan Bisnis
+
+Tujuan bisnis utama dari pengembangan sistem rekomendasi ini adalah:
+
+- Memberikan evaluasi menyeluruh atas dua pendekatan sistem rekomendasi, sehingga pengguna atau pengembang dapat memahami kelebihan dan kekurangan masing-masing metode.  
+- Menggambarkan proses pengembangan sistem rekomendasi secara lengkap, mulai dari data preprocessing, pemodelan, evaluasi, hingga interpretasi hasil.
+
+### Apakah Hasil Sudah Relevan dan Mencapai Tujuan?
+
+**1. Evaluasi Collaborative Filtering**  
+Model collaborative filtering menunjukkan performa yang cukup baik dengan nilai MAE dan RMSE pada data test yang masih dekat dengan data train. Ini menunjukkan kemampuan generalisasi yang baik tanpa overfitting. Dengan demikian, model ini dapat diandalkan untuk memprediksi rating pengguna, memenuhi tujuan bisnis memberikan pemahaman mengenai kekuatan metode collaborative filtering.
+
+**2. Evaluasi Content-Based Filtering**  
+Content-based filtering diuji dengan Precision@10, menghasilkan nilai sekitar 0.6 pada contoh kasus Toy Story, yang berarti 6 dari 10 rekomendasi benar-benar relevan dengan film target. Angka ini jauh lebih tinggi dibandingkan rata-rata Precision@10 collaborative filtering sebesar 0.1386. Hasil ini memperlihatkan bahwa content-based filtering sangat efektif dalam memberikan rekomendasi tematik yang relevan, sesuai dengan tujuan bisnis dalam memahami kekuatan metode content-based.
+
+**Kesimpulan**  
+Hasil evaluasi secara keseluruhan sudah sangat relevan dan berhasil memenuhi tujuan bisnis, yaitu memberikan gambaran yang jelas mengenai keunggulan dan keterbatasan masing-masing metode rekomendasi. Collaborative filtering unggul dalam prediksi rating dan generalisasi, sementara content-based filtering unggul dalam relevansi tematik rekomendasi.Selain itu, proses pengembangan sistem mulai dari preprocessing, pemodelan, hingga evaluasi dan interpretasi juga sudah digambarkan secara komprehensif, memenuhi tujuan bisnis kedua. Namun, untuk memastikan hasil ini dapat diimplementasikan secara efektif dalam skala produksi, perlu dilakukan validasi lebih lanjut dengan data pengguna yang lebih besar dan beragam.
+Secara keseluruhan, sistem rekomendasi yang dikembangkan sudah berada di jalur yang tepat untuk memenuhi tujuan bisnis yang ditetapkan.
+
