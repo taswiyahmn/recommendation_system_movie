@@ -150,8 +150,9 @@ Tahun **1995** tercatat sebagai tahun dengan jumlah produksi film terbanyak (215
 # Persiapan Data (Data Preparation)
 
 ## Umum  
-- Ditemukan nilai `null` pada kolom `release_date` dan `IMDb_url` di file `u.item`. Nilai-nilai tersebut diisi dengan string default seperti `'Unknown'` atau `'NA'`.  
+- Mengambil tahun rilis dari judul film dan menyimpannya ke kolom `release_date`, kemudian menghapus tahun tersebut dari judul agar hanya tersisa nama film saja.
 - Kolom `video_release_date` dihapus karena tidak digunakan dalam pemodelan.
+- Ditemukan nilai `null` pada kolom `release_date` dan `IMDb_url` di file `u.item`. Nilai-nilai tersebut diisi dengan string default seperti `'Unknown'` atau `'NA'`.  
 
 ## Untuk Collaborative Filtering  
 - Digunakan **Label Encoding** pada kolom `user_id` dan `movie_id` untuk menghindari sparsity saat membangun model SVD.  
